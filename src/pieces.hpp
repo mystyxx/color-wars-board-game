@@ -12,11 +12,11 @@ class Piece {
 		Piece();
 		virtual ~Piece();
 
-		int getHp(); void setHp();
-		int getCost();
+		int getHp(); static void setHp(int);
+		int getCost(); static void setCost(int);
 		char getDisplayChar();
-		char getTeam(); void setTeam();
-		int getHasPlayedTT(); int setHasPlayedTT();
+		char getTeam(); void setTeam(char);
+		int getHasPlayedTT(); void setHasPlayedTT(int);
 
 		virtual void sayUniqueLine() = 0;
 
@@ -30,7 +30,7 @@ class Mobile : public Piece {
 		Mobile();
 		virtual ~Mobile();
 
-		int getMoveSpeed(); int setMoveSpeed();
+		int getMoveSpeed(); void setMoveSpeed(int);
 
 		// actions
 		void goTo(int a, int b);
@@ -43,7 +43,7 @@ class Gatherer : public Piece {
 		Gatherer();
 		virtual ~Gatherer();
 
-		int getProd(); void setProd();
+		int getProd(); void setProd(int);
 
 		// actions
 		void gather();
@@ -55,7 +55,7 @@ class Fighter : public Mobile {
 		Fighter();
 		virtual ~Fighter();
 
-		int getPower(); void setPower();
+		int getPower(); void setPower(int);
 	
 		// actions
 		void attack(Cell* target);
@@ -72,7 +72,7 @@ class Spawner : public Piece {
 			delete[] can_spawn;
 		};
 
-		Piece* getCanSpawn();
+		Piece** getCanSpawn();
 
 		// actions
 		void pieceSpawn(Piece*, Cell*);
@@ -81,7 +81,7 @@ class Spawner : public Piece {
 
 /* -------------- PIECES REELLES -------------- */
 
-class Castle : public Spawner {
+class Castle : public Spawner, public Gatherer {
 	Castle();
 	~Castle();
 };
