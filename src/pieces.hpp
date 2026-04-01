@@ -1,19 +1,18 @@
-#include <cstdlib>
 class Cell;
 
 class Piece {
 	int hp;
-	int cost;
+	const int cost;
 	char display_char;
 	char team;
 	int has_played_tt;
 
 	public:
-		Piece();
+		Piece(char display_char, int cost);
 		virtual ~Piece();
 
-		int getHp(); static void setHp(int);
-		int getCost(); static void setCost(int);
+		int getHp(); void setHp(int);
+		int getCost(); 
 		char getDisplayChar();
 		char getTeam(); void setTeam(char);
 		int getHasPlayedTT(); void setHasPlayedTT(int);
@@ -24,10 +23,10 @@ class Piece {
 		void passTurn();
 };
 
-class Mobile : public Piece {
+class Mobile : virtual public Piece {
 		int movespeed;
 	public:
-		Mobile();
+		Mobile(char c, int cost);
 		virtual ~Mobile();
 
 		int getMoveSpeed(); void setMoveSpeed(int);
@@ -36,11 +35,11 @@ class Mobile : public Piece {
 		void goTo(int a, int b);
 };
 
-class Gatherer : public Piece {
+class Gatherer : virtual public Piece {
 	int prod;
 
 	public:
-		Gatherer();
+		Gatherer(char c, int cost);
 		virtual ~Gatherer();
 
 		int getProd(); void setProd(int);
@@ -52,7 +51,7 @@ class Gatherer : public Piece {
 class Fighter : public Mobile {
 	int power;
 	public:
-		Fighter();
+		Fighter(char c, int cost);
 		virtual ~Fighter();
 
 		int getPower(); void setPower(int);
@@ -62,15 +61,13 @@ class Fighter : public Mobile {
 };
 
 
-class Spawner : public Piece {
+class Spawner : virtual public Piece {
 	protected:
 		Piece** can_spawn;
 
 	public:
-		Spawner();
-		virtual ~Spawner() {
-			delete[] can_spawn;
-		};
+		Spawner(char c, int cost);
+		virtual ~Spawner();
 
 		Piece** getCanSpawn();
 
@@ -82,18 +79,22 @@ class Spawner : public Piece {
 /* -------------- PIECES REELLES -------------- */
 
 class Castle : public Spawner, public Gatherer {
-	Castle();
-	~Castle();
+	public:
+		Castle();
+		void sayUniqueLine();
 };
 class Lord : public Fighter, public Spawner {
-	Lord();
-	~Lord();
+	public:
+		Lord();
+		void sayUniqueLine();
 };
 class Warrior : public Fighter {
-	Warrior();
-	~Warrior();
+	public:
+		Warrior();
+		void sayUniqueLine();
 };
 class Farmer : public Mobile, public Gatherer {
-	Farmer();
-	~Farmer();
+	public:
+		Farmer();
+		void sayUniqueLine();
 };

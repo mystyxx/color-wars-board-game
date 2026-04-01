@@ -1,10 +1,14 @@
 #include "pieces.hpp"
+#include "game_variables.hpp"
+#include <iostream>
 class Cell;
 
 // Piece
+Piece::Piece(char display_char, int cost) : display_char(display_char), cost(cost) {}
 int Piece::getHp() {
 	return this->hp;
 } 
+Piece::~Piece() {}
 void Piece::setHp(int hp) {
 	this->hp = hp;
 }
@@ -32,6 +36,8 @@ void Piece::passTurn() {
 }
 
 // Mobile 
+Mobile::Mobile(char c, int cost) : Piece(c, cost) {}
+Mobile::~Mobile() {}
 int Mobile::getMoveSpeed() {
 	return this->movespeed;
 }
@@ -40,6 +46,8 @@ void Mobile::setMoveSpeed(int movespeed) {
 }
 
 // Gatherer
+Gatherer::Gatherer(char c, int cost) : Piece(c, cost) {}
+Gatherer::~Gatherer() {}
 int Gatherer::getProd() {
 	return this->prod;
 }
@@ -48,6 +56,8 @@ void Gatherer::setProd(int prod) {
 }
 
 // Fighter
+Fighter::Fighter(char c, int cost) : Mobile(c, cost) {}
+Fighter::~Fighter() {}
 int Fighter::getPower() {
 	return this->power;
 }
@@ -56,25 +66,54 @@ void Fighter::setPower(int power) {
 }
 
 // Spawner
+Spawner::Spawner(char c, int cost) : Piece(c, cost) {}
+Spawner::~Spawner() {
+	delete[] this->can_spawn;
+}
 Piece** Spawner::getCanSpawn() {
 	return this->can_spawn;
 }
 
+
 /* -------------- PIECES REELLES -------------- */
 
 // Castle
-Castle::Castle() {
+Castle::Castle() : Piece('C', PIECE_COST_CASTLE), Gatherer('C', PIECE_COST_CASTLE), Spawner('C', PIECE_COST_CASTLE) {
 	this->setHp(20);
-	this->setCost(15);
 	this->setProd(2);
+	can_spawn = new Piece*[3];
+	can_spawn[0] = new Farmer();
+	can_spawn[1] = new Warrior();
+	can_spawn[2] = new Lord();
 }
-~Castle();
+void Castle::sayUniqueLine() {
+	std::cout << "« Haha i'm safe inside those walls ! »" << std::endl;
+}
 
-Lord();
-~Lord();
+Lord::Lord() : Piece('L', PIECE_COST_LORD), Fighter('L', PIECE_COST_LORD), Spawner('L', PIECE_COST_LORD) {
+	//can_spawn[0] = new Castle();
+	this->setPower(3);
+	this->setHp(5);
+	this->setMoveSpeed(1);
+}
+void Lord::sayUniqueLine() {
+	std::cout << " « Protect me, my fellow warriors ! »" << std::endl;
+}
 
-Warrior();
-~Warrior();
+Warrior::Warrior() : Piece('W', PIECE_COST_WARRIOR), Fighter('W', PIECE_COST_WARRIOR) {
+	this->setPower(3);
+	this->setHp(10);
+	this->setMoveSpeed(3);
+}
+void Warrior::sayUniqueLine() {
+	std::cout << "« Ready to follow orders ! »" << std::endl;
+}
 
-Farmer();
-~Farmer();
+Farmer::Farmer() : Piece('F', PIECE_COST_FARMER), Gatherer('F', PIECE_COST_FARMER), Mobile('F', PIECE_COST_FARMER) {
+	this->setHp(1);
+	this->setMoveSpeed(2);
+	this->setProd(5);
+}
+void Farmer::sayUniqueLine() {
+	std::cout << "« I'm doing my best to help my beloved king ! »" << std::endl;
+}
