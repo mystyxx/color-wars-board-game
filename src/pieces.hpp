@@ -1,5 +1,6 @@
 #pragma once
 #include "game_variables.hpp"
+#include <vector>
 class Cell;
 
 class Piece {
@@ -70,13 +71,12 @@ class Fighter : public Mobile {
 
 class Spawner : virtual public Piece {
 	protected:
-		Piece** can_spawn;
+		std::vector<piece_id> can_spawn;
 
 	public:
 		Spawner(char team, char c, int cost);
-		virtual ~Spawner();
 
-		Piece** getCanSpawn();
+		std::vector<piece_id> getCanSpawn();
 
 		// actions
 		void pieceSpawn(Piece*, Cell*);

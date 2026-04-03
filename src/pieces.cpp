@@ -1,4 +1,5 @@
 #include "pieces.hpp"
+#include "game_variables.hpp"
 #include <iostream>
 class Cell;
 
@@ -88,10 +89,8 @@ void Fighter::setPower(int power) {
 Spawner::Spawner(char team, char c, int cost) : Piece(team, c, cost) {
 	this->addPermission(ACTION_SPAWN);
 }
-Spawner::~Spawner() {
-	delete[] this->can_spawn;
-}
-Piece** Spawner::getCanSpawn() {
+
+std::vector<piece_id> Spawner::getCanSpawn() {
 	return this->can_spawn;
 }
 
@@ -102,20 +101,19 @@ Piece** Spawner::getCanSpawn() {
 Castle::Castle(char team) : Piece(team, 'C', PIECE_COST_CASTLE), Gatherer(team, 'C', PIECE_COST_CASTLE), Spawner(team, 'C', PIECE_COST_CASTLE) {
 	this->setHp(20);
 	this->setProd(2);
-	can_spawn = new Piece*[3];
-	can_spawn[0] = new Farmer(this->getTeam());
-	can_spawn[1] = new Warrior(this->getTeam());
-	can_spawn[2] = new Lord(this->getTeam());
+	can_spawn.push_back(PIECE_FARMER);
+	can_spawn.push_back(PIECE_WARRIOR);
+	can_spawn.push_back(PIECE_LORD);
 }
 void Castle::sayUniqueLine() {
 	std::cout << "« Haha i'm safe inside those walls ! »" << std::endl;
 }
 
 Lord::Lord(char team) : Piece(team, 'L', PIECE_COST_LORD), Fighter(team, 'L', PIECE_COST_LORD), Spawner(team, 'L', PIECE_COST_LORD) {
-	//can_spawn[0] = new Castle();
 	this->setPower(3);
 	this->setHp(5);
 	this->setMoveSpeed(1);
+	can_spawn.push_back(PIECE_CASTLE);
 }
 void Lord::sayUniqueLine() {
 	std::cout << " « Protect me, my fellow warriors ! »" << std::endl;
