@@ -1,14 +1,20 @@
+#pragma once
+#include "game_variables.hpp"
 class Cell;
 
 class Piece {
 	int hp;
 	const int cost;
 	char display_char;
-	char team;
+	char team; 
 	int has_played_tt;
+	action_id autorized_actions;
+
+	protected:
+		void addPermission(action_id action);
 
 	public:
-		Piece(char display_char, int cost);
+		Piece(char team, char display_char, int cost);
 		virtual ~Piece();
 
 		int getHp(); void setHp(int);
@@ -16,6 +22,7 @@ class Piece {
 		char getDisplayChar();
 		char getTeam(); void setTeam(char);
 		int getHasPlayedTT(); void setHasPlayedTT(int);
+		action_id getAutorizedActions();
 
 		virtual void sayUniqueLine() = 0;
 
@@ -26,7 +33,7 @@ class Piece {
 class Mobile : virtual public Piece {
 		int movespeed;
 	public:
-		Mobile(char c, int cost);
+		Mobile(char team, char c, int cost);
 		virtual ~Mobile();
 
 		int getMoveSpeed(); void setMoveSpeed(int);
@@ -39,7 +46,7 @@ class Gatherer : virtual public Piece {
 	int prod;
 
 	public:
-		Gatherer(char c, int cost);
+		Gatherer(char team, char c, int cost);
 		virtual ~Gatherer();
 
 		int getProd(); void setProd(int);
@@ -51,7 +58,7 @@ class Gatherer : virtual public Piece {
 class Fighter : public Mobile {
 	int power;
 	public:
-		Fighter(char c, int cost);
+		Fighter(char team, char c, int cost);
 		virtual ~Fighter();
 
 		int getPower(); void setPower(int);
@@ -66,7 +73,7 @@ class Spawner : virtual public Piece {
 		Piece** can_spawn;
 
 	public:
-		Spawner(char c, int cost);
+		Spawner(char team, char c, int cost);
 		virtual ~Spawner();
 
 		Piece** getCanSpawn();
@@ -80,21 +87,21 @@ class Spawner : virtual public Piece {
 
 class Castle : public Spawner, public Gatherer {
 	public:
-		Castle();
+		Castle(char);
 		void sayUniqueLine();
 };
 class Lord : public Fighter, public Spawner {
 	public:
-		Lord();
+		Lord(char);
 		void sayUniqueLine();
 };
 class Warrior : public Fighter {
 	public:
-		Warrior();
+		Warrior(char);
 		void sayUniqueLine();
 };
 class Farmer : public Mobile, public Gatherer {
 	public:
-		Farmer();
+		Farmer(char);
 		void sayUniqueLine();
 };
