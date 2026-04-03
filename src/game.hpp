@@ -4,17 +4,21 @@
 #include "vector"
 
 class Action {
-	action_id action = ACTION_PASS;
-	unsigned int x = 0;
-	unsigned int y = 0;
-	piece_id piece = PIECE_NONE;
+	action_id action;
+	unsigned int x;
+	unsigned int y;
+	piece_id pid;
+	Piece* piece;
+	Piece* target;
 
 	public:
-		Action();
-		action_id getActionId();
-		unsigned int getX();
-		unsigned int getY();
-		piece_id getPiece();
+		Action(Piece* piece = nullptr, action_id action = ACTION_PASS, unsigned int x = 0, unsigned int y = 0, piece_id pid = PIECE_NONE);
+		action_id getActionId(); void setActionId(action_id);
+		unsigned int getX(); void setX(unsigned int);
+		unsigned int getY(); void setY(unsigned int);
+		piece_id getPieceId(); void setPieceId(piece_id);
+		Piece* getPiece(); void setPiece(Piece*);
+		Piece* getTarget(); void setTarget(Piece*);
 
 };
 
@@ -43,8 +47,7 @@ class Board {
 
 		void printBoard();
 
-		// TODO
-		//int handleAction(Action);
+		int handleAction(Action);
 
 };
 
