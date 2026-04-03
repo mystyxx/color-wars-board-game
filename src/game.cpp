@@ -128,12 +128,18 @@ Piece& TurnManager::askPiece() {
 	std::vector<Piece*> av_pieces = this->getBoard().getAvailablePiecesFromTeam(this->getTeams()[0]);
 	std::cout << "selectionnez une pièce" << std::endl;
 	for(int i = 0; i < av_pieces.size(); ++i) {
-		std::cout << i << ". " << av_pieces[i] << std::endl;
+		Cell* c = this->getBoard().findCell(av_pieces[i]);
+		int x = c->row; int y = c->col;
+		std::cout << i << ". " << av_pieces[i]->getDisplayChar() << "  (" << x << ", " << y << ")"  << std::endl;
 	}
 
 	unsigned short choice = 1 << 15;
-	while(choice > av_pieces.size())
+	while(choice > av_pieces.size() - 1) {
 		std::cin >> choice;
+		if(choice <= av_pieces.size() - 1) 
+			std::cout << "Incorrect piece number";
+	}
+
 
 	return *av_pieces[choice];
 }
@@ -141,19 +147,24 @@ Piece& TurnManager::askPiece() {
 Action TurnManager::askAction(Piece& p) {
 	Action a;
 	if(p.getAutorizedActions() & ACTION_PASS) 
-		std::cout << "0. Pass turn";
+		std::cout << "0. Pass turn \t";
 	if(p.getAutorizedActions() & ACTION_MOVE) 
-		std::cout << "1. Move";
+		std::cout << "1. Move \t";
 	if(p.getAutorizedActions() & ACTION_MOVEANDATTACK) 
-		std::cout << "2. Move & attack";
+		std::cout << "2. Move & attack \t";
 	if(p.getAutorizedActions() & ACTION_GATHER) 
-		std::cout << "3. Gather GOLD";
+		std::cout << "3. Gather GOLD \t";
 	if(p.getAutorizedActions() & ACTION_SPAWN) 
-		std::cout << "4. Spawn PIECE";
+		std::cout << "4. Spawn PIECE \t";
+	std::cout << std::endl;
 
-	unsigned short choice = 1 << 15;
-	while(choice > 4) 
+	unsigned short choice = 0;
+	do {
 		std::cin >> choice;
+		if(!(1 << choice & p.getAutorizedActions()))
+			std::cout << "Action not allowed for this piece" << std::endl;
+	}
+	while(!(p.getAutorizedActions() & 1 << choice));
 
 	return a;
 }
