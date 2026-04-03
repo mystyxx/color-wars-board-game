@@ -2,6 +2,27 @@
 #include "game_variables.hpp"
 #include <iostream>
 
+// Action
+Action::Action() { 
+	this->action = ACTION_PASS;
+	this->x = 0;
+	this->y = 0;
+	this->piece = PIECE_NONE;
+}
+
+action_id Action::getActionId() {
+	return this->action;
+}
+unsigned int Action::getX() {
+	return this->x;
+}
+unsigned int Action::getY() {
+	return this->y;
+}
+piece_id Action::getPiece() {
+	return this->piece;
+}
+
 // Cell
 Piece* Cell::getPiece() {
 	return this->piece;
@@ -90,4 +111,49 @@ void Board::printBoard() {
 		std::cout << "-" << std::endl;
 	}
 	return;
+}
+
+// TurnManager
+TurnManager::TurnManager(std::vector<char> t, Board& b) : teams(t), board(b) {}
+
+std::vector<char> TurnManager::getTeams() {
+	return this->teams;
+}
+
+Board& TurnManager::getBoard() {
+	return this->board;
+}
+
+Piece& TurnManager::askPiece() {
+	std::vector<Piece*> av_pieces = this->getBoard().getAvailablePiecesFromTeam(this->getTeams()[0]);
+	std::cout << "selectionnez une pièce" << std::endl;
+	for(int i = 0; i < av_pieces.size(); ++i) {
+		std::cout << i << ". " << av_pieces[i] << std::endl;
+	}
+
+	unsigned short choice = 1 << 15;
+	while(choice > av_pieces.size())
+		std::cin >> choice;
+
+	return *av_pieces[choice];
+}
+
+Action TurnManager::askAction(Piece& p) {
+	Action a;
+	if(p.getAutorizedActions() & ACTION_PASS) 
+		std::cout << "0. Pass turn";
+	if(p.getAutorizedActions() & ACTION_MOVE) 
+		std::cout << "1. Move";
+	if(p.getAutorizedActions() & ACTION_MOVEANDATTACK) 
+		std::cout << "2. Move & attack";
+	if(p.getAutorizedActions() & ACTION_GATHER) 
+		std::cout << "3. Gather GOLD";
+	if(p.getAutorizedActions() & ACTION_SPAWN) 
+		std::cout << "4. Spawn PIECE";
+
+	unsigned short choice = 1 << 15;
+	while(choice > 4) 
+		std::cin >> choice;
+
+	return a;
 }

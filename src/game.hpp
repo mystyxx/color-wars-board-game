@@ -1,13 +1,29 @@
-#include "game_variables.hpp"
+#pragma once
 #include "pieces.hpp"
+#include "game_variables.hpp"
 #include "vector"
+
+class Action {
+	action_id action = ACTION_PASS;
+	unsigned int x = 0;
+	unsigned int y = 0;
+	piece_id piece = PIECE_NONE;
+
+	public:
+		Action();
+		action_id getActionId();
+		unsigned int getX();
+		unsigned int getY();
+		piece_id getPiece();
+
+};
 
 class Cell {
 	Piece* piece;
 	public:
 		Piece* getPiece();
 		void setPiece(Piece* p);
-		int row, col;
+		unsigned int row, col;
 };
 
 class Board {
@@ -26,4 +42,19 @@ class Board {
 		int manhattanDist(Cell c1, Cell c2);
 
 		void printBoard();
+
+		// TODO
+		//int handleAction(Action);
+
+};
+
+class TurnManager {
+	std::vector<char> teams;
+	Board& board;
+	public:
+		TurnManager(std::vector<char>, Board&);
+		std::vector<char> getTeams();
+		Board& getBoard();
+		Piece& askPiece();
+		Action askAction(Piece& piece);
 };
