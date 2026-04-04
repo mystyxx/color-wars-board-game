@@ -39,8 +39,6 @@ class Mobile : virtual public Piece {
 
 		int getMoveSpeed(); void setMoveSpeed(int);
 
-		// actions
-		void goTo(int a, int b);
 };
 
 class Gatherer : virtual public Piece {
@@ -51,9 +49,6 @@ class Gatherer : virtual public Piece {
 		virtual ~Gatherer();
 
 		int getProd(); void setProd(int);
-
-		// actions
-		void gather();
 };
 
 class Fighter : public Mobile {

@@ -3,6 +3,17 @@
 #include "game_variables.hpp"
 #include "vector"
 
+class Team {
+	char id;
+	int gold;
+	public:
+		Team(char id, int gold); 
+		char getId();
+		int getGold(); 
+		void setGold(int);
+		bool addGold(int);
+};
+
 class Action {
 	action_id action;
 	unsigned int x;
@@ -19,7 +30,6 @@ class Action {
 		piece_id getPieceId(); void setPieceId(piece_id);
 		Piece* getPiece(); void setPiece(Piece*);
 		Piece* getTarget(); void setTarget(Piece*);
-
 };
 
 class Cell {
@@ -32,32 +42,25 @@ class Cell {
 
 class Board {
 	Cell cells[BOARD_W][BOARD_H];
+	std::vector<Team*> teams;
 	public:
-		Board();
-
+		Board(std::vector<Team*>);
 		Cell* getCell(int r, int c);
-
 		Cell* findCell(Piece* piece);
-
+		std::vector<Team*> getTeams();
+		Team* getTeam(char);
 		std::vector<Piece*> getPiecesFromTeam(char team);
-
 		std::vector<Piece*> getAvailablePiecesFromTeam(char team);
-
 		int manhattanDist(Cell c1, Cell c2);
-
 		void printBoard();
-
-		int handleAction(Action);
-
+		bool handleAction(Action*);
 };
 
 class TurnManager {
-	std::vector<char> teams;
 	Board& board;
 	public:
-		TurnManager(std::vector<char>, Board&);
-		std::vector<char> getTeams();
+		TurnManager(Board&);
 		Board& getBoard();
 		Piece& askPiece();
-		Action askAction(Piece& piece);
+		Action* askAction(Piece& piece);
 };

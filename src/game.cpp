@@ -1,9 +1,27 @@
 #include "game.hpp"
 #include "game_variables.hpp"
 #include "pieces.hpp"
+#include <cstdlib>
 #include <iostream>
-
 #include <vector>
+
+// Team
+Team::Team(char id, int gold) {
+	this->id= id;
+	this->gold = gold;
+}
+
+char Team::getId() { return this->id; }
+int Team::getGold() { return this->gold; }
+void Team::setGold(int amount) { this->gold = amount; }
+bool Team::addGold(int amount) {
+	if(this->gold + amount < 0)
+		return false;
+	else this->gold += amount;
+	return true;
+}
+
+
 // Action
 Action::Action(Piece* piece, action_id action, unsigned int x, unsigned int y, piece_id pid) { 
 	this->action = ACTION_PASS;
@@ -24,6 +42,9 @@ unsigned int Action::getY() {
 }
 Piece* Action::getPiece() {
 	return this->piece;
+}
+Piece* Action::getTarget() {
+	return this->target;
 }
 void Action::setActionId(action_id a) {
 	this->action = a;
@@ -53,7 +74,7 @@ void Cell::setPiece(Piece* p) {
 }
 
 // Board
-Board::Board() {
+Board::Board(std::vector<Team*> vt) : teams(vt) {
 	for(int i = 0; i < BOARD_W; ++i) {
 		for(int j = 0; j < BOARD_H; ++j) {
 			this->cells[i][j].setPiece(nullptr);
@@ -74,6 +95,15 @@ Cell* Board::findCell(Piece* piece) {
 				return &this->cells[i][j];
 		}
 	}
+	return nullptr;
+}
+
+std::vector<Team*> Board::getTeams() { return this->teams; }
+
+Team* Board::getTeam(char team) {
+	for(int i = 0; i < teams.size(); ++i) 
+		if(team == this->teams[i]->getId())
+			return teams[i];
 	return nullptr;
 }
 
@@ -104,8 +134,7 @@ std::vector<Piece*> Board::getAvailablePiecesFromTeam(char team) {
 }
 
 int Board::manhattanDist(Cell c1, Cell c2) {
-	int res = (c1.row - c2.row + c1.col - c2.col);
-	return res < 0 ? -res : res;
+	return std::abs((int)c1.row - (int)c2.row) + std::abs((int)c1.col - (int)c2.col);
 }
 
 void Board::printBoard() {
@@ -134,28 +163,101 @@ void Board::printBoard() {
 	return;
 }
 
-int Board::handleAction(Action a) {
-	switch(a.getActionId()) {
-		case ACTION_PASS:
-			a.getPiece()->setHasPlayedTT(true);
+bool Board::handleAction(Action* a) {
+	if(!a) return false;
+	switch(a->getActionId()) {
+		case ACTION_PASS: {
+			a->getPiece()->setHasPlayedTT(true);
+			break;
+						  }
+		case ACTION_MOVE: {
+			Mobile* mob = dynamic_cast<Mobile*>(a->getPiece());
+			if(!mob) return false;
+
+			if(a->getX() < 0 || a->getX() > BOARD_W || a->getY() < 0 || a->getY() > BOARD_H) {
+				std::cout << "Error : tile is out of bounds !" << std::endl;
+				return false;
+			}
+
+			int dist = this->manhattanDist(*this->getCell(a->getX(), a->getY()), *this->findCell(a->getPiece()));
+			if(dist > mob->getMoveSpeed()) {
+				std::cout << "Error : tile is too far !" << std::endl;
+				return false;
+			}
+
+			Cell* dest = this->getCell(a->getX(), a->getY());
+			if(dest->getPiece() != nullptr) {
+				std::cout << "Error : Tile occupied !";
+				return false;
+			}
+
+			Cell* c = this->findCell(mob);
+			c->setPiece(nullptr);
+			this->getCell(a->getX(), a->getY())->setPiece(mob);
+			return true;
+						  }
+		case ACTION_MOVEANDATTACK: {
+			Fighter* mob = dynamic_cast<Fighter*>(a->getPiece()); 
+			if(!mob) return false;
+
+			if(a->getX() < 0 || a->getX() > BOARD_W || a->getY() < 0 || a->getY() > BOARD_H) {
+				std::cout << "Error : tile is out of bounds !" << std::endl;
+				return false;
+			}
+			int dist = this->manhattanDist(*this->getCell(a->getX(), a->getY()), *this->findCell(a->getPiece()));
+			if(dist > mob->getMoveSpeed()) {
+				std::cout << "Error : tile is too far !" << std::endl;
+				return false;
+			}
+
+			Cell* dest = this->getCell(a->getX(), a->getY());
+			if(dest->getPiece() != nullptr) {
+				std::cout << "Error : Tile occupied !";
+				return false;
+			}
+
+		    Cell* c = this->findCell(mob);
+			Piece* target = a->getTarget();
+			if(!target) return false;
+			c->setPiece(nullptr);
+			target->setHp(target->getHp() - mob->getPower());
+			dest->setPiece(mob);
+
+			if(target->getHp() <= 0) {
+				this->findCell(target)->setPiece(nullptr);
+				std::cout << "You have eliminated " << target->getDisplayChar() << "  (" << c->row  << ", " << c->col << ")" << std::endl;
+			}
+
+			return true;
+								   }
+
+		case ACTION_GATHER: {
+			Gatherer* g = dynamic_cast<Gatherer*>(a->getPiece());
+			if(!g) return false;
+
+			Team* t = this->getTeams()[0];
+			if(!t) return false;
+
+			t->addGold(g->getProd());
+			a->getPiece()->setHasPlayedTT(true);
+			return true;
+
+							}
+		default: return false;
 	}
-	return 0;
+	return false;
 }
 
 // TurnManager
-TurnManager::TurnManager(std::vector<char> t, Board& b) : teams(t), board(b) {}
-
-std::vector<char> TurnManager::getTeams() {
-	return this->teams;
-}
+TurnManager::TurnManager(Board& b) : board(b) {}
 
 Board& TurnManager::getBoard() {
 	return this->board;
 }
 
 Piece& TurnManager::askPiece() {
-	std::vector<Piece*> av_pieces = this->getBoard().getAvailablePiecesFromTeam(this->getTeams()[0]);
-	std::cout << "selectionnez une pièce" << std::endl;
+	std::vector<Piece*> av_pieces = this->getBoard().getAvailablePiecesFromTeam(this->getBoard().getTeams()[0]->getId());
+	std::cout << "Select a piece : " << std::endl;
 	for(int i = 1; i < av_pieces.size()+1; ++i) {
 		Cell* c = this->getBoard().findCell(av_pieces[i-1]);
 		int x = c->row; int y = c->col;
@@ -173,8 +275,8 @@ Piece& TurnManager::askPiece() {
 	return *av_pieces[choice-1];
 }
 
-Action TurnManager::askAction(Piece& p) {
-	Action a;
+Action* TurnManager::askAction(Piece& p) {
+	Action* a = new Action();
 	if(p.getAutorizedActions() & ACTION_PASS) 
 		std::cout << "0. Pass turn \t";
 	if(p.getAutorizedActions() & ACTION_MOVE) 
@@ -205,33 +307,43 @@ Action TurnManager::askAction(Piece& p) {
 				std::cout << "Type coords you want to go (with a space in between)" << std::endl;
 				std::cout << "> "; std::cin >> x; std::cin >> y;
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
-			a.setX(x); a.setY(y);
+			a->setX(x); a->setY(y);
 			break;
 
-		case ACTION_MOVEANDATTACK: 
+		case ACTION_MOVEANDATTACK: {
 			do {
 				std::cout << "Type coords you want to go (with a space in between)" << std::endl;
 				std::cout << "> "; std::cin >> x; std::cin >> y;
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
-			a.setX(x); a.setY(y);
+			a->setX(x); a->setY(y);
+
 
 			choice = -1;
-			for(int i = -1; i > 2; ++++i)
-				for(int j = -1; j > 2; ++++j)
-					adj_pieces.push_back(this->getBoard().getCell(x + i, y + j));
-			if(adj_pieces.size() == 0) {std::cout << "Error : You cannot attack anyone from here." << std::endl; return a;}
-			else if(adj_pieces.size() > 1) a.setTarget(adj_pieces.front()->getPiece());
-			else do {
-				std::cout << "What piece do you wish to attack ?" << std::endl;
-				for(int i = 1; i < adj_pieces.size(); ++i)
-					std::cout << i << ". " << adj_pieces[i]->getPiece()->getDisplayChar() << "  (" << x << ", " << y << ")"  << std::endl;
-				std::cout << "> "; std::cin >> choice;
-				if(!(choice > adj_pieces.size())) std::cout << "Please enter a valid target" << std::endl;
+			int dx[] = {-1, 1, 0, 0};
+			int dy[] = {0, 0, -1, 1};
 
-			} while(choice > adj_pieces.size());
-			a.setTarget(adj_pieces[choice]->getPiece());
+				for(int i = 0; i < 4; ++i) {
+					Cell* c = this->getBoard().getCell(x + dx[i], y + dy[i]);
+					if(c)
+						if(c->getPiece() && c->getPiece()->getTeam() != p.getTeam())
+							adj_pieces.push_back(c);
+				}
+			if(adj_pieces.size() == 0) {std::cout << "Error : You cannot attack anyone from here." << std::endl; return nullptr;}
+			else if(adj_pieces.size() == 1) { a->setTarget(adj_pieces.front()->getPiece()); }
+			else {
+				do {
+					std::cout << "Which piece do you wish to attack ?" << std::endl;
+					for(int i = 0; i < adj_pieces.size(); ++i)
+						std::cout << i + 1 << ". " << adj_pieces[i]->getPiece()->getDisplayChar() << "  (" << x << ", " << y << ")"  << std::endl;
+					std::cout << "> "; std::cin >> choice;
+					if(choice > adj_pieces.size()) std::cout << "Please enter a valid target" << std::endl;
+
+				} while(choice > adj_pieces.size());
+				a->setTarget(adj_pieces[choice - 1]->getPiece());
+			}
 
 			break;
+								   }
 
 		case ACTION_SPAWN:
 			Spawner* s = dynamic_cast<Spawner*>(&p);
@@ -246,21 +358,21 @@ Action TurnManager::askAction(Piece& p) {
 			}
 			else do {
 				std::cout << "What piece do you wish to spawn ?" << std::endl;
-				for(int i = 1; i < s->getCanSpawn().size(); ++i)
-					std::cout << i << ". " << s->getCanSpawn()[i-1] << std::endl; 
+				for(int i = 0; i < s->getCanSpawn().size(); ++i)
+					std::cout << i + 1 << ". " << s->getCanSpawn()[i] << std::endl; 
 				std::cout << "> "; std::cin >> pid;
 				if(pid > s->getCanSpawn().size()) std::cout << "Please enter a valid piece" << std::endl;
 
 			} while(pid > s->getCanSpawn().size());
 
-			a.setX(x); a.setY(y);
-			a.setPieceId(s->getCanSpawn()[pid-1]);
+			a->setX(x); a->setY(y);
+			a->setPieceId(s->getCanSpawn()[pid-1]);
 
 			break;
 
 	}
 
-	a.setPiece(&p);
-	a.setActionId(1 << choice);
+	a->setPiece(&p);
+	a->setActionId(1 << choice);
 	return a;
 }

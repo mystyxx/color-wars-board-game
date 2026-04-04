@@ -1,21 +1,28 @@
 #include "game.hpp"
 
 int main(void) {
-	Board b;
+
+	Team t1('1', 30);
+	Team t2('2', 30);
+	std::vector<Team*> teams;
+	teams.push_back(&t1);
+	teams.push_back(&t2);
+
+	Board b(teams);
 	Board& my_board = b;
 
-	std::vector<char> teams;
-	teams.push_back('1');
-	teams.push_back('2');
 	Lord l('1');
-	TurnManager t(teams, my_board);
+	TurnManager t(my_board);
+
 
 	//b.printBoard();
 	b.getCell(0, 0)->setPiece(&l);
 	b.printBoard();
 
+	my_board.handleAction(t.askAction(t.askPiece()));
 
-	t.askAction(t.askPiece());
+	b.printBoard();
+
 
 	return 0;
 }
