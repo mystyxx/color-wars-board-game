@@ -64,6 +64,9 @@ void Action::setTarget(Piece* p) {
 void Action::setPieceId(piece_id p) {
 	this->pid = p;
 }
+piece_id Action::getPieceId() {
+	return this->pid;
+}
 
 // Cell
 Piece* Cell::getPiece() {
@@ -86,7 +89,7 @@ Board::Board(std::vector<Team*> vt) : teams(vt) {
 
 Cell* Board::getCell(int r, int c) {
 	if(r < 0 || c < 0 || r > BOARD_W || r > BOARD_H) return nullptr;
-	return &this->cells[r][c];
+	return &this->cells[c][r];
 } 
 Cell* Board::findCell(Piece* piece) {
 	for(int i = 0; i < BOARD_W; ++i) {
@@ -165,6 +168,7 @@ void Board::printBoard() {
 
 bool Board::handleAction(Action* a) {
 	if(!a) return false;
+	a->getPiece()->sayUniqueLine();
 	switch(a->getActionId()) {
 		case ACTION_PASS: {
 			a->getPiece()->setHasPlayedTT(true);
@@ -194,6 +198,7 @@ bool Board::handleAction(Action* a) {
 			Cell* c = this->findCell(mob);
 			c->setPiece(nullptr);
 			this->getCell(a->getX(), a->getY())->setPiece(mob);
+			a->getPiece()->setHasPlayedTT(true);
 			return true;
 						  }
 		case ACTION_MOVEANDATTACK: {
@@ -228,6 +233,7 @@ bool Board::handleAction(Action* a) {
 				std::cout << "You have eliminated " << target->getDisplayChar() << "  (" << c->row  << ", " << c->col << ")" << std::endl;
 			}
 
+			a->getPiece()->setHasPlayedTT(true);
 			return true;
 								   }
 
@@ -243,6 +249,71 @@ bool Board::handleAction(Action* a) {
 			return true;
 
 							}
+		case ACTION_SPAWN: {
+		    Spawner* s = dynamic_cast<Spawner*>(a->getPiece());
+			if(!s) return false;
+
+			Cell c = *this->getCell(a->getX(), a->getY());
+			Cell spawnerCell = *this->findCell(a->getPiece());
+
+			if(c.getPiece()) {
+				std::cout << "Error : Tile is occupied !" << std::endl;
+				return false;
+			}
+			if(this->manhattanDist(c, *this->findCell(a->getPiece())) > 1) {
+				std::cout << "Error : Tile is too far ! (range is 1)" << std::endl;
+				return false;
+			}
+
+			std::cout << a->getPieceId() << std::endl;
+			std::cout << PIECE_CASTLE << std::endl;
+			switch(a->getPieceId()) {
+				case PIECE_LORD: {
+					if(this->getTeam(a->getPiece()->getTeam())->getGold() < PIECE_COST_LORD) {
+						std::cout << "Error : Not enough gold for Lord!" << std::endl;
+						return false;
+					}
+					Lord n(a->getPiece()->getTeam()); 
+					c.setPiece(&n);
+					a->getPiece()->setHasPlayedTT(true);
+					break;  // ← ADD THIS
+				}
+				case PIECE_CASTLE: {
+					if(this->getTeam(a->getPiece()->getTeam())->getGold() < PIECE_COST_CASTLE) {
+						std::cout << "Error : Not enough gold for Castle!" << std::endl;
+						return false;
+					}
+					Castle n(a->getPiece()->getTeam()); 
+					c.setPiece(&n);
+					a->getPiece()->setHasPlayedTT(true);
+					break;  // ← ADD THIS
+				}
+				case PIECE_WARRIOR: {
+					if(this->getTeam(a->getPiece()->getTeam())->getGold() < PIECE_COST_WARRIOR) {
+						std::cout << "Error : Not enough gold for Warrior!" << std::endl;
+						return false;
+					}
+					Warrior n(a->getPiece()->getTeam()); 
+					c.setPiece(&n);
+					a->getPiece()->setHasPlayedTT(true);
+					break;  // ← ADD THIS
+				}
+				case PIECE_FARMER: {
+					if(this->getTeam(a->getPiece()->getTeam())->getGold() < PIECE_COST_FARMER) {
+						std::cout << "Error : Not enough gold for Farmer!" << std::endl;
+					a->getPiece()->setHasPlayedTT(true);
+						return false;
+					}
+					Farmer n(a->getPiece()->getTeam()); 
+					c.setPiece(&n);
+					a->getPiece()->setHasPlayedTT(true);
+					break;  // ← ADD THIS
+				}
+				default:
+					return false;
+			}
+			return true;
+						   }
 		default: return false;
 	}
 	return false;
@@ -305,7 +376,7 @@ Action* TurnManager::askAction(Piece& p) {
 		case ACTION_MOVE: 
 			do {
 				std::cout << "Type coords you want to go (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> x; std::cin >> y;
+				std::cout << "> "; std::cin >> y; std::cin >> x;
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 			a->setX(x); a->setY(y);
 			break;
@@ -313,7 +384,7 @@ Action* TurnManager::askAction(Piece& p) {
 		case ACTION_MOVEANDATTACK: {
 			do {
 				std::cout << "Type coords you want to go (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> x; std::cin >> y;
+				std::cout << "> "; std::cin >> y; std::cin >> x;
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 			a->setX(x); a->setY(y);
 
@@ -349,14 +420,15 @@ Action* TurnManager::askAction(Piece& p) {
 			Spawner* s = dynamic_cast<Spawner*>(&p);
 			do {
 				std::cout << "Type coords you want your piece to spawn to (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> x; std::cin >> y;
+				std::cout << "> "; std::cin >> y; std::cin >> x;
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 
 			if(s->getCanSpawn().size() == 1) {
 				pid = s->getCanSpawn().front();
-
+				a->setPieceId((piece_id)pid);
 			}
 			else do {
+
 				std::cout << "What piece do you wish to spawn ?" << std::endl;
 				for(int i = 0; i < s->getCanSpawn().size(); ++i)
 					std::cout << i + 1 << ". " << s->getCanSpawn()[i] << std::endl; 
