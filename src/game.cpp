@@ -78,8 +78,8 @@ void Cell::setPiece(Piece* p) {
 
 // Board
 Board::Board(std::deque<Team*> vt) : teams(vt) {
-	for(int i = 0; i < BOARD_W; ++i) {
-		for(int j = 0; j < BOARD_H; ++j) {
+	for(int i = 0; i < BOARD_H; ++i) {
+		for(int j = 0; j < BOARD_W; ++j) {
 			this->cells[i][j].setPiece(nullptr);
 			this->cells[i][j].row = i;
 			this->cells[i][j].col = j;
@@ -89,13 +89,13 @@ Board::Board(std::deque<Team*> vt) : teams(vt) {
 Board::~Board() {
 	for(int i = 0; i < BOARD_W; ++i) {
 		for(int j = 0; j < BOARD_H; ++j) {
-			delete this->getCell(i, j);
+		   delete this->getCell(i, j);
 		}
 	}
 }
 
 Cell* Board::getCell(int r, int c) {
-	if(r < 0 || c < 0 || r > BOARD_W || r > BOARD_H) return nullptr;
+	if(r < 0 || c < 0 || c > BOARD_W || r > BOARD_H) return nullptr;
 	return &this->cells[c][r];
 } 
 Cell* Board::findCell(Piece* piece) {
@@ -186,25 +186,28 @@ bool Board::handleAction(Action* a) {
 			if(!mob) return false;
 
 			if(a->getX() < 0 || a->getX() > BOARD_W || a->getY() < 0 || a->getY() > BOARD_H) {
-				std::cout << "Error : tile is out of bounds !" << std::endl;
+				std::cout << "Error : Tile is out of bounds !" << std::endl;
 				return false;
 			}
 
 			int dist = this->manhattanDist(*this->getCell(a->getX(), a->getY()), *this->findCell(a->getPiece()));
 			if(dist > mob->getMoveSpeed()) {
-				std::cout << "Error : tile is too far !" << std::endl;
+				std::cout << "Error : Tile is too far !" << std::endl;
 				return false;
 			}
 
 			Cell* dest = this->getCell(a->getX(), a->getY());
-			if(dest->getPiece() != nullptr) {
-				std::cout << "Error : Tile occupied !";
+			Cell* c = this->findCell(mob);
+			if(dest->getPiece() != nullptr && dest != c) {
+				std::cout << "Error : Tile occupied !" << std::endl;
 				return false;
 			}
 
-			Cell* c = this->findCell(mob);
-			c->setPiece(nullptr);
-			this->getCell(a->getX(), a->getY())->setPiece(mob);
+			if(c != dest) {
+				c->setPiece(nullptr);
+				this->getCell(a->getX(), a->getY())->setPiece(mob);
+			}
+
 			a->getPiece()->setHasPlayedTT(true);
 			return true;
 						  }
@@ -213,26 +216,29 @@ bool Board::handleAction(Action* a) {
 			if(!mob) return false;
 
 			if(a->getX() < 0 || a->getX() > BOARD_W || a->getY() < 0 || a->getY() > BOARD_H) {
-				std::cout << "Error : tile is out of bounds !" << std::endl;
+				std::cout << "Error : Tile is out of bounds !" << std::endl;
 				return false;
 			}
 			int dist = this->manhattanDist(*this->getCell(a->getX(), a->getY()), *this->findCell(a->getPiece()));
 			if(dist > mob->getMoveSpeed()) {
-				std::cout << "Error : tile is too far !" << std::endl;
+				std::cout << "Error : Tile is too far !" << std::endl;
 				return false;
 			}
 
 			Cell* dest = this->getCell(a->getX(), a->getY());
-			if(dest->getPiece() != nullptr) {
-				std::cout << "Error : Tile occupied !";
+		    Cell* c = this->findCell(mob);
+			if(dest->getPiece() != nullptr && dest != c) {
+				std::cout << "Error : Tile occupied !" << std::endl;
 				return false;
 			}
 
-		    Cell* c = this->findCell(mob);
+			if(c != dest) {
+				c->setPiece(nullptr);
+				dest->setPiece(mob);
+			}
+
 			Piece* target = a->getTarget();
 			if(!target) return false;
-			c->setPiece(nullptr);
-			dest->setPiece(mob);
 			target->setHp(target->getHp() - mob->getPower());
 
 			if(target->getHp() <= 0) {
@@ -394,7 +400,6 @@ Action* TurnManager::askAction(Piece& p) {
 			a->setX(x); a->setY(y);
 
 
-			choice = -1;
 			int dx[] = {-1, 1, 0, 0};
 			int dy[] = {0, 0, -1, 1};
 
@@ -408,6 +413,7 @@ Action* TurnManager::askAction(Piece& p) {
 			else if(adj_pieces.size() == 1) { a->setTarget(adj_pieces.front()->getPiece()); }
 			else {
 				do {
+					choice = -1;
 					std::cout << "Which piece do you wish to attack ?" << std::endl;
 					for(int i = 0; i < adj_pieces.size(); ++i)
 						std::cout << i + 1 << ". " << adj_pieces[i]->getPiece()->getDisplayChar() << "  (" << x << ", " << y << ")"  << std::endl;
