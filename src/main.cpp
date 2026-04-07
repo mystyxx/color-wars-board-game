@@ -9,19 +9,19 @@ int main(void) {
 	teams.push_back(&t1);
 	teams.push_back(&t2);
 
-	Board b(teams);
-	Board& my_board = b;
+	Board* b = new Board(teams);
+	Board& my_board = *b;
 
-	Lord l('1');
-	Lord l2('2');
+	Lord* l = new Lord('1');
+	Lord* l2 = new Lord('2');
 	TurnManager t(my_board);
 
 
 
-	//b.printBoard();
-	b.getCell(10, 0)->setPiece(&l);
-	b.getCell(10, 19)->setPiece(&l2);
-	//b.printBoard();
+	//b->printBoard();
+	b->getCell(10, 0)->setPiece(l);
+	b->getCell(10, 19)->setPiece(l2);
+	//b->printBoard();
 
 	while(!b->getPiecesFromTeam(b->getTeams().front()->getId()).empty()) {
 		std::cout << "Au tour de l'équipe " << b->getTeams().front()->getId() << " (" << b->getTeams().front()->getGold() << " GOLD)"<< std::endl;
@@ -38,7 +38,11 @@ int main(void) {
 	
 	}
 
-	b.printBoard();
+	std::cout << std::endl << "Partie remportée par l'équipe " << b->getTeams().front()->getId() << std::endl;
+
+	b->printBoard();
+
+	delete b;
 
 
 	return 0;

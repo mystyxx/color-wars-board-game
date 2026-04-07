@@ -86,6 +86,13 @@ Board::Board(std::deque<Team*> vt) : teams(vt) {
 		}
 	}
 }
+Board::~Board() {
+	for(int i = 0; i < BOARD_W; ++i) {
+		for(int j = 0; j < BOARD_H; ++j) {
+			delete this->getCell(i, j);
+		}
+	}
+}
 
 Cell* Board::getCell(int r, int c) {
 	if(r < 0 || c < 0 || r > BOARD_W || r > BOARD_H) return nullptr;
@@ -225,12 +232,13 @@ bool Board::handleAction(Action* a) {
 			Piece* target = a->getTarget();
 			if(!target) return false;
 			c->setPiece(nullptr);
-			target->setHp(target->getHp() - mob->getPower());
 			dest->setPiece(mob);
+			target->setHp(target->getHp() - mob->getPower());
 
 			if(target->getHp() <= 0) {
 				this->findCell(target)->setPiece(nullptr);
 				std::cout << "You have eliminated " << target->getDisplayChar() << "  (" << c->row  << ", " << c->col << ")" << std::endl;
+				delete target;
 			}
 
 			a->getPiece()->setHasPlayedTT(true);
