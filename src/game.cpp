@@ -77,7 +77,7 @@ void Cell::setPiece(Piece* p) {
 }
 
 // Board
-Board::Board(std::vector<Team*> vt) : teams(vt) {
+Board::Board(std::deque<Team*> vt) : teams(vt) {
 	for(int i = 0; i < BOARD_W; ++i) {
 		for(int j = 0; j < BOARD_H; ++j) {
 			this->cells[i][j].setPiece(nullptr);
@@ -101,7 +101,7 @@ Cell* Board::findCell(Piece* piece) {
 	return nullptr;
 }
 
-std::vector<Team*> Board::getTeams() { return this->teams; }
+std::deque<Team*>& Board::getTeams() { return this->teams; }
 
 Team* Board::getTeam(char team) {
 	for(int i = 0; i < teams.size(); ++i) 
