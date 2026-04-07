@@ -237,7 +237,7 @@ bool Board::handleAction(Action* a) {
 
 			if(target->getHp() <= 0) {
 				this->findCell(target)->setPiece(nullptr);
-				std::cout << "You have eliminated " << target->getDisplayChar() << "  (" << c->row  << ", " << c->col << ")" << std::endl;
+				std::cout << "You have eliminated " << target->getDisplayChar() << "  (" << c->col  << ", " << c->row << ")" << std::endl;
 				delete target;
 			}
 
@@ -337,7 +337,7 @@ Piece& TurnManager::askPiece() {
 	std::cout << "Select a piece : " << std::endl;
 	for(int i = 1; i < av_pieces.size()+1; ++i) {
 		Cell* c = this->getBoard().findCell(av_pieces[i-1]);
-		int x = c->row; int y = c->col;
+		int x = c->col; int y = c->row;
 		std::cout << i << ". " << av_pieces[i-1]->getDisplayChar() << "  (" << x << ", " << y << ")"  << std::endl;
 	}
 
@@ -381,7 +381,7 @@ Action* TurnManager::askAction(Piece& p) {
 		case ACTION_MOVE: 
 			do {
 				std::cout << "Type coords you want to go (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> y; std::cin >> x;
+				std::cout << "> "; std::cin >> x; std::cin >> y;
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 			a->setX(x); a->setY(y);
 			break;
@@ -389,7 +389,7 @@ Action* TurnManager::askAction(Piece& p) {
 		case ACTION_MOVEANDATTACK: {
 			do {
 				std::cout << "Type coords you want to go (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> y; std::cin >> x;
+				std::cout << "> "; std::cin >> x; std::cin >> y;
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 			a->setX(x); a->setY(y);
 
@@ -425,7 +425,7 @@ Action* TurnManager::askAction(Piece& p) {
 			Spawner* s = dynamic_cast<Spawner*>(&p);
 			do {
 				std::cout << "Type coords you want your piece to spawn to (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> y; std::cin >> x;
+				std::cout << "> "; std::cin >> x; std::cin >> y;
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 
 			if(s->getCanSpawn().size() == 1) {
