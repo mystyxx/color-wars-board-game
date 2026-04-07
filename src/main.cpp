@@ -3,11 +3,11 @@
 
 int main(void) {
 
-	Team t1('1', 30);
-	Team t2('2', 30);
+	Team* t1 = new Team('1', 30);
+	Team* t2 = new Team('2', 30);
 	std::deque<Team*> teams;
-	teams.push_back(&t1);
-	teams.push_back(&t2);
+	teams.push_back(t1);
+	teams.push_back(t2);
 
 	Board* b = new Board(teams);
 	Board& my_board = *b;
@@ -15,8 +15,6 @@ int main(void) {
 	Lord* l = new Lord('1');
 	Lord* l2 = new Lord('2');
 	TurnManager t(my_board);
-
-
 
 	//b->printBoard();
 	b->getCell(10, 0)->setPiece(l);
@@ -31,7 +29,9 @@ int main(void) {
 
 		while(!b->getAvailablePiecesFromTeam(b->getTeams().front()->getId()).empty()) {
 			b->printBoard();
-			my_board.handleAction(t.askAction(t.askPiece()));
+			Action* a = t.askAction(t.askPiece());
+			my_board.handleAction(a);
+			delete a;
 		}
 		b->getTeams().push_back(b->getTeams().front());
 		b->getTeams().pop_front();
@@ -43,7 +43,6 @@ int main(void) {
 	b->printBoard();
 
 	delete b;
-
 
 	return 0;
 }
