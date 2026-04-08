@@ -1,6 +1,7 @@
 SOURCE_FILES = src/main.cpp src/game.cpp src/pieces.cpp src/renderer.cpp
 HEADERS = src/game_variables.hpp src/pieces.hpp src/renderer.hpp
 ARGS = 
+LARGS = -lncurses -lmenu
 DEBUG_ARGS = -fsanitize=address
 OUTPUT_FILE = colorwars
 DEBUG_FILE = colorwars_debug
@@ -15,13 +16,13 @@ all : $(OUTPUT_FILE)
 debug : $(DEBUG_FILE)
 
 $(OUTPUT_FILE) : $(OBJ)
-	g++ $(ARGS) $(OBJ) -o $(OUTPUT_FILE)
+	g++ $(ARGS) $(OBJ) $(LARGS) -o $(OUTPUT_FILE)
 
 $(DEBUG_FILE) : $(DEBUG_OBJ)
-	g++ $(ARGS) $(DEBUG_ARGS) $(DEBUG_OBJ) -o $(DEBUG_FILE)
+	g++ $(ARGS) $(DEBUG_ARGS) $(LARGS) $(DEBUG_OBJ) -o $(DEBUG_FILE)
 
 %.o : %.cpp
-	g++ $(ARGS) -c $< -o $@
+	g++ -c $< -o $@
 
 %.debug.o : %.cpp
 	g++ $(ARGS) $(DEBUG_ARGS) -c $< -o $@

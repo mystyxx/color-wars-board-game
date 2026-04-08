@@ -1,6 +1,9 @@
 #ifndef _VARDEF_
 #define _VARDEF_
 
+#include <map>
+#include <string>
+
 #define BOARD_W 20
 #define BOARD_H 20
 
@@ -26,5 +29,32 @@ typedef unsigned short action_id;
 #define ACTION_MOVEANDATTACK 0b00100
 #define ACTION_GATHER 0b01000
 #define ACTION_SPAWN 0b10000
+
+#define UI_STATUS_H 3
+#define UI_INPUT_H 10
+
+// Dictionnaires pour les affichages
+const std::map<piece_id, std::string> PIECE_NAMES = {
+	{PIECE_NONE, ""},
+	{PIECE_LORD, "LORD"},
+	{PIECE_CASTLE, "CASTLE"},
+	{PIECE_WARRIOR, "WARRIOR"},
+	{PIECE_FARMER, "FARMER"}
+};
+const std::map<char, std::string> PIECE_CNAMES = {
+	{'\0', ""},
+	{'L', "LORD"},
+	{'C', "CASTLE"},
+	{'W', "WARRIOR"},
+	{'F', "FARMER"}
+};
+
+const std::map<action_id, std::string> ACTION_NAMES = {
+	{ACTION_PASS, "Pass"},
+	{ACTION_MOVE, "Move"},
+	{ACTION_MOVEANDATTACK, "Attack"},
+	{ACTION_GATHER, "Gather"},
+	{ACTION_SPAWN, "Creation"}
+};
 
 #endif

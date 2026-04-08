@@ -1,4 +1,5 @@
 #include "game.hpp"
+#include "renderer.hpp"
 #include <iostream>
 
 int main(void) {
@@ -9,40 +10,55 @@ int main(void) {
 	teams.push_back(t1);
 	teams.push_back(t2);
 
-	Board* b = new Board(teams);
-	Board& my_board = *b;
+	std::vector<Action*> history;
+
+	Renderer* r = new Renderer();
+	Board* b = new Board(teams, r);
 
 	Lord* l = new Lord('1');
 	Lord* l2 = new Lord('2');
-	TurnManager t(my_board);
+	TurnManager t(*b, *r);
 
 	//b->printBoard();
 	b->getCell(10, 0)->setPiece(l);
 	b->getCell(10, 19)->setPiece(l2);
 	//b->printBoard();
+	
 
+	r->drawStatus(*b);
 	while(!b->getPiecesFromTeam(b->getTeams().front()->getId()).empty()) {
-		std::cout << "Au tour de l'équipe " << b->getTeams().front()->getId() << " (" << b->getTeams().front()->getGold() << " GOLD)"<< std::endl;
+		// std::cout << "Au tour de l'équipe " << b->getTeams().front()->getId() << " (" << b->getTeams().front()->getGold() << " GOLD)"<< std::endl;
 		std::vector<Piece*> p = b->getPiecesFromTeam(b->getTeams().front()->getId());
 		for(int i = 0; i < p.size(); ++i)
 			p[i]->setHasPlayedTT(false);
 
 		while(!b->getAvailablePiecesFromTeam(b->getTeams().front()->getId()).empty()) {
-			b->printBoard();
+			r->drawBoard(*b);
 			Action* a = t.askAction(t.askPiece());
-			my_board.handleAction(a);
+
+			if(b->handleAction(a))
+				history.push_back(new Action(*a));
+
+			r->drawStatus(*b);
+			r->drawAction(history);
 			delete a;
 		}
 		b->getTeams().push_back(b->getTeams().front());
 		b->getTeams().pop_front();
+		r->drawStatus(*b);
 	
 	}
 
-	std::cout << std::endl << "Partie remportée par l'équipe " << b->getTeams().front()->getId() << std::endl;
+	// std::cout << std::endl << "Partie remportée par l'équipe " << b->getTeams().front()->getId() << std::endl;
 
 	b->printBoard();
 
 	delete b;
+	delete r;
+	delete t1;
+	delete t2;
+	for(int i = 0; i < history.size(); ++i)
+		delete history[i];
 
 	return 0;
 }

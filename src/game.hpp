@@ -1,7 +1,12 @@
+#ifndef GAME_HPP
+#define GAME_HPP 
+
 #pragma once
 #include "pieces.hpp"
 #include "game_variables.hpp"
 #include <deque>
+class Renderer;
+#endif
 
 class Team {
 	char id;
@@ -43,8 +48,9 @@ class Cell {
 class Board {
 	Cell cells[BOARD_W][BOARD_H];
 	std::deque<Team*> teams;
+	Renderer* renderer;
 	public:
-		Board(std::deque<Team*>);
+		Board(std::deque<Team*>, Renderer* r = nullptr);
 		~Board();
 		Cell* getCell(int r, int c);
 		Cell* findCell(Piece* piece);
@@ -59,8 +65,13 @@ class Board {
 
 class TurnManager {
 	Board& board;
+	Renderer& renderer;
+	
+	int getInputNumber();
+	bool getInputCoords(unsigned int& x, unsigned int& y);
+	
 	public:
-		TurnManager(Board&);
+		TurnManager(Board&, Renderer&);
 		Board& getBoard();
 		Piece& askPiece();
 		Action* askAction(Piece& piece);

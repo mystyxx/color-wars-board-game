@@ -1,6 +1,7 @@
 #pragma once
 #include "game_variables.hpp"
 #include <vector>
+#include <iostream>
 class Cell;
 
 class Piece {

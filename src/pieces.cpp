@@ -1,6 +1,4 @@
 #include "pieces.hpp"
-#include "game_variables.hpp"
-#include <iostream>
 class Cell;
 
 // Piece

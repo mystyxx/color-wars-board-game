@@ -1,10 +1,8 @@
 #include "game.hpp"
 #include "game_variables.hpp"
-#include "pieces.hpp"
-#include <cstdlib>
-#include <iostream>
-#include <vector>
+#include "renderer.hpp"
 
+#include <sstream>
 // Team
 Team::Team(char id, int gold) {
 	this->id= id;
@@ -77,7 +75,7 @@ void Cell::setPiece(Piece* p) {
 }
 
 // Board
-Board::Board(std::deque<Team*> vt) : teams(vt) {
+Board::Board(std::deque<Team*> vt, Renderer* r) : teams(vt), renderer(r) {
 	for(int i = 0; i < BOARD_H; ++i) {
 		for(int j = 0; j < BOARD_W; ++j) {
 			this->cells[i][j].setPiece(nullptr);
@@ -100,7 +98,7 @@ Board::~Board() {
 
 Cell* Board::getCell(int r, int c) {
 	if(r < 0 || c < 0 || c > BOARD_W || r > BOARD_H) return nullptr;
-	return &this->cells[c][r];
+	return  &this->cells[c][r];
 } 
 Cell* Board::findCell(Piece* piece) {
 	for(int i = 0; i < BOARD_W; ++i) {
@@ -152,10 +150,12 @@ int Board::manhattanDist(Cell c1, Cell c2) {
 }
 
 void Board::printBoard() {
+	if(!this->renderer) return;
+	std::stringstream board_output;
 	for(int j = 0; j < BOARD_W; ++j) {
-		std::cout << "--";
+		board_output << "--";
 	}
-	std::cout << "-" << std::endl;
+	board_output << "-\n";
 
 	for(int i = 0; i < BOARD_W; ++i) {
 		for(int j = 0; j < BOARD_H; ++j) {
@@ -165,15 +165,16 @@ void Board::printBoard() {
 			if(c->getPiece() == nullptr) s = ' ';
 			else s = c->getPiece()->getDisplayChar();
 
-			std::cout << "|" << s;
+			board_output << "|" << s;
 		}
-		std::cout << "|" << std::endl;
+		board_output << "|\n";
 
 		for(int j = 0; j < BOARD_W; ++j) {
-			std::cout << "--";
+			board_output << "--";
 		}
-		std::cout << "-" << std::endl;
+		board_output << "-\n";
 	}
+	this->renderer->drawPrompt(board_output.str());
 	return;
 }
 
@@ -190,21 +191,21 @@ bool Board::handleAction(Action* a) {
 			if(!mob) return false;
 
 			if(a->getX() < 0 || a->getX() > BOARD_W || a->getY() < 0 || a->getY() > BOARD_H) {
-				std::cout << "Error : Tile is out of bounds !" << std::endl;
-				return false;
+				if(this->renderer) this->renderer->drawPrompt("Error : Tile is out of bounds !");
+				getch(); return false;
 			}
 
 			int dist = this->manhattanDist(*this->getCell(a->getX(), a->getY()), *this->findCell(a->getPiece()));
 			if(dist > mob->getMoveSpeed()) {
-				std::cout << "Error : Tile is too far !" << std::endl;
-				return false;
+				if(this->renderer) this->renderer->drawPrompt("Error : Tile is too far !");
+				getch(); return false;
 			}
 
 			Cell* dest = this->getCell(a->getX(), a->getY());
 			Cell* c = this->findCell(mob);
 			if(dest->getPiece() != nullptr && dest != c) {
-				std::cout << "Error : Tile occupied !" << std::endl;
-				return false;
+				if(this->renderer) this->renderer->drawPrompt("Error : Tile occupied !");
+				getch(); return false;
 			}
 
 			if(c != dest) {
@@ -220,20 +221,20 @@ bool Board::handleAction(Action* a) {
 			if(!mob) return false;
 
 			if(a->getX() < 0 || a->getX() > BOARD_W || a->getY() < 0 || a->getY() > BOARD_H) {
-				std::cout << "Error : Tile is out of bounds !" << std::endl;
-				return false;
+				if(this->renderer) this->renderer->drawPrompt("Error : Tile is out of bounds !");
+				getch(); return false;
 			}
 			int dist = this->manhattanDist(*this->getCell(a->getX(), a->getY()), *this->findCell(a->getPiece()));
 			if(dist > mob->getMoveSpeed()) {
-				std::cout << "Error : Tile is too far !" << std::endl;
-				return false;
+				if(this->renderer) this->renderer->drawPrompt("Error : Tile is too far !");
+				getch(); return false;
 			}
 
 			Cell* dest = this->getCell(a->getX(), a->getY());
 		    Cell* c = this->findCell(mob);
 			if(dest->getPiece() != nullptr && dest != c) {
-				std::cout << "Error : Tile occupied !" << std::endl;
-				return false;
+				if(this->renderer) this->renderer->drawPrompt("Error : Tile occupied !");
+				getch(); return false;
 			}
 
 			if(c != dest) {
@@ -247,7 +248,9 @@ bool Board::handleAction(Action* a) {
 
 			if(target->getHp() <= 0) {
 				this->findCell(target)->setPiece(nullptr);
-				std::cout << "You have eliminated " << target->getDisplayChar() << "  (" << c->col  << ", " << c->row << ")" << std::endl;
+				std::stringstream elim_msg;
+				elim_msg << "You have eliminated " << target->getDisplayChar() << "  (" << c->col << ", " << c->row << ")";
+				if(this->renderer) this->renderer->drawPrompt(elim_msg.str());
 				delete target;
 				target = nullptr;
 			}
@@ -276,19 +279,19 @@ bool Board::handleAction(Action* a) {
 			Cell* spawnerCell = this->findCell(a->getPiece());
 
 			if(c->getPiece()) {
-				std::cout << "Error : Tile is occupied !" << std::endl;
-				return false;
+				if(this->renderer) this->renderer->drawPrompt("Error : Tile is occupied !");
+				getch(); return false;
 			}
 			if(this->manhattanDist(*c, *this->findCell(a->getPiece())) > 1) {
-				std::cout << "Error : Tile is too far ! (range is 1)" << std::endl;
-				return false;
+				if(this->renderer) this->renderer->drawPrompt("Error : Tile is too far ! (range is 1)");
+				getch(); return false;
 			}
 
 			switch(a->getPieceId()) {
 				case PIECE_LORD: {
 					if(this->getTeam(a->getPiece()->getTeam())->getGold() < PIECE_COST_LORD) {
-						std::cout << "Error : Not enough gold for Lord!" << std::endl;
-						return false;
+						if(this->renderer) this->renderer->drawPrompt("Error : Not enough gold for Lord!");
+						getch(); return false;
 					}
 					Lord* n = new Lord(a->getPiece()->getTeam());
 					c->setPiece(n);
@@ -297,8 +300,8 @@ bool Board::handleAction(Action* a) {
 				}
 				case PIECE_CASTLE: {
 					if(this->getTeam(a->getPiece()->getTeam())->getGold() < PIECE_COST_CASTLE) {
-						std::cout << "Error : Not enough gold for Castle!" << std::endl;
-						return false;
+						if(this->renderer) this->renderer->drawPrompt("Error : Not enough gold for Castle!");
+						getch(); return false;
 					}
 					Castle* n = new Castle(a->getPiece()->getTeam());
 					c->setPiece(n);
@@ -307,8 +310,8 @@ bool Board::handleAction(Action* a) {
 				}
 				case PIECE_WARRIOR: {
 					if(this->getTeam(a->getPiece()->getTeam())->getGold() < PIECE_COST_WARRIOR) {
-						std::cout << "Error : Not enough gold for Warrior!" << std::endl;
-						return false;
+						if(this->renderer) this->renderer->drawPrompt("Error : Not enough gold for Warrior!");
+						getch(); return false;
 					}
 					Warrior* n = new Warrior(a->getPiece()->getTeam());
 					c->setPiece(n);
@@ -317,9 +320,9 @@ bool Board::handleAction(Action* a) {
 				}
 				case PIECE_FARMER: {
 					if(this->getTeam(a->getPiece()->getTeam())->getGold() < PIECE_COST_FARMER) {
-						std::cout << "Error : Not enough gold for Farmer!" << std::endl;
+						if(this->renderer) this->renderer->drawPrompt("Error : Not enough gold for Farmer!");
 					a->getPiece()->setHasPlayedTT(true);
-						return false;
+						getch(); return false;
 					}
 					Farmer* n = new Farmer(a->getPiece()->getTeam());
 					c->setPiece(n);
@@ -337,26 +340,58 @@ bool Board::handleAction(Action* a) {
 }
 
 // TurnManager
-TurnManager::TurnManager(Board& b) : board(b) {}
+TurnManager::TurnManager(Board& b, Renderer& r) : board(b), renderer(r) {}
 
 Board& TurnManager::getBoard() {
 	return this->board;
 }
 
+int TurnManager::getInputNumber() {
+	int input = this->renderer.getInput();
+	if(input >= '0' && input <= '9') {
+		return input - '0';
+	}
+	return -1;
+}
+
+bool TurnManager::getInputCoords(unsigned int& x, unsigned int& y) {
+	int input_x = this->getInputNumber();
+	int input_y = this->getInputNumber();
+	if(input_x < 0 || input_y < 0) {
+		return false;
+	}
+	x = input_x;
+	y = input_y;
+	return true;
+}
+
 Piece& TurnManager::askPiece() {
 	std::vector<Piece*> av_pieces = this->getBoard().getAvailablePiecesFromTeam(this->getBoard().getTeams()[0]->getId());
-	std::cout << "Select a piece : " << std::endl;
+	std::stringstream prompt;
+	prompt << "Select a piece :" << std::endl;
 	for(int i = 1; i < av_pieces.size()+1; ++i) {
 		Cell* c = this->getBoard().findCell(av_pieces[i-1]);
 		int x = c->col; int y = c->row;
-		std::cout << i << ". " << av_pieces[i-1]->getDisplayChar() << "  (" << x << ", " << y << ")"  << std::endl;
+		prompt << i << ". " << PIECE_CNAMES.at(av_pieces[i-1]->getDisplayChar()) << "  (" << x << ", " << y << ") ";
 	}
+	prompt << std::endl;
 
 	unsigned short choice = -1;
+	std::string error_msg = "";
 	while(!choice || choice > av_pieces.size()) {
-		std::cout << "> "; std::cin >> choice;
-		if(!choice || choice > av_pieces.size()) 
-			std::cout << "Incorrect piece number" << std::endl;
+		std::stringstream full_prompt;
+		full_prompt << prompt.str() << error_msg;
+		this->renderer.drawPrompt(full_prompt.str());
+		std::string input = this->renderer.getInputLine();
+		if(input.length() > 0 && input[0] >= '1' && input[0] <= '9') {
+			choice = input[0] - '0';
+		}
+
+		if(!choice || choice > av_pieces.size()) {
+			error_msg = "Incorrect Piece number.\n";
+		} else {
+			error_msg = "";
+		}
 	}
 
 	return *av_pieces[choice-1];
@@ -364,23 +399,37 @@ Piece& TurnManager::askPiece() {
 
 Action* TurnManager::askAction(Piece& p) {
 	Action* a = new Action();
+	std::stringstream s;
 	if(p.getAutorizedActions() & ACTION_PASS) 
-		std::cout << "0. Pass turn \t";
+		s << "0. Pass turn \t";
 	if(p.getAutorizedActions() & ACTION_MOVE) 
-		std::cout << "1. Move \t";
+		s << "1. Move \t";
 	if(p.getAutorizedActions() & ACTION_MOVEANDATTACK) 
-		std::cout << "2. Move & attack \t";
+		s << "2. Move & attack \t";
 	if(p.getAutorizedActions() & ACTION_GATHER) 
-		std::cout << "3. Gather GOLD \t";
+		s << "3. Gather GOLD \t";
 	if(p.getAutorizedActions() & ACTION_SPAWN) 
-		std::cout << "4. Spawn PIECE \t";
-	std::cout << std::endl;
+		s << "4. Spawn PIECE \t";
+	std::string base_prompt = s.str();
 
 	unsigned short choice = 0;
+	Cell* c = this->getBoard().findCell(&p);
+	std::stringstream selected_piece_ss;
+	selected_piece_ss << "Selected piece : " << p.getDisplayChar() << " " << p.getTeam() << " @ (" << c->col << ", " << c->row << "), HP : " << p.getHp();
+	std::string selected_piece_info = selected_piece_ss.str();
+	std::string error_msg = "";
 	do {
-		std::cout << "> "; std::cin >> choice;
+		std::stringstream full_prompt;
+		full_prompt << selected_piece_info << "\n" << base_prompt << "\n" << error_msg;
+		this->renderer.drawPrompt(full_prompt.str());
+		std::string input = this->renderer.getInputLine();
+		if(input.length() > 0) {
+			choice = input[0] - '0';
+		}
 		if(!(1 << choice & p.getAutorizedActions()))
-			std::cout << "Action not allowed for this piece" << std::endl;
+			error_msg = "Action not allowed for this piece\n";
+		else
+			error_msg = "";
 	}
 	while(!(p.getAutorizedActions() & 1 << choice));
 
@@ -390,17 +439,31 @@ Action* TurnManager::askAction(Piece& p) {
 
 	switch(1 << choice) {
 		case ACTION_MOVE: 
+			error_msg = "";
 			do {
-				std::cout << "Type coords you want to go (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> x; std::cin >> y;
+				std::stringstream full_prompt;
+				full_prompt << selected_piece_info << "\n" << "Type coords you want to go (with a space in between)\n" << error_msg;
+				this->renderer.drawPrompt(full_prompt.str());
+				std::string input = this->renderer.getInputLine();
+				if(sscanf(input.c_str(), "%u %u", &x, &y) != 2) {
+					error_msg = "Invalid input";
+					x = -1; y = -1;
+				}
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 			a->setX(x); a->setY(y);
 			break;
 
 		case ACTION_MOVEANDATTACK: {
+			error_msg = "";
 			do {
-				std::cout << "Type coords you want to go (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> x; std::cin >> y;
+				std::stringstream full_prompt;
+				full_prompt << selected_piece_info << "\n" << "Type coords you want to go (with a space in between)\n" << error_msg;
+				this->renderer.drawPrompt(full_prompt.str());
+				std::string input = this->renderer.getInputLine();
+				if(sscanf(input.c_str(), "%u %u", &x, &y) != 2) {
+					error_msg = "Invalid input";
+					x = -1; y = -1;
+				}
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 			a->setX(x); a->setY(y);
 
@@ -414,42 +477,72 @@ Action* TurnManager::askAction(Piece& p) {
 						if(c->getPiece() && c->getPiece()->getTeam() != p.getTeam())
 							adj_pieces.push_back(c);
 				}
-			if(adj_pieces.size() == 0) {std::cout << "Error : You cannot attack anyone from here." << std::endl; return nullptr;}
+			if(adj_pieces.size() == 0) {this->renderer.drawPrompt("Error : You cannot attack anyone from here.\n"); getch(); return nullptr;}
 			else if(adj_pieces.size() == 1) { a->setTarget(adj_pieces.front()->getPiece()); }
 			else {
+				std::stringstream target_prompt;
+				target_prompt << "Which piece do you wish to attack ?\n";
+				for(int i = 0; i < adj_pieces.size(); ++i)
+					target_prompt << i + 1 << ". " << PIECE_CNAMES.at(adj_pieces[i]->getPiece()->getDisplayChar()) << "  (" << x << ", " << y << ")\n";
+				
+				error_msg = "";
 				do {
 					choice = -1;
-					std::cout << "Which piece do you wish to attack ?" << std::endl;
-					for(int i = 0; i < adj_pieces.size(); ++i)
-						std::cout << i + 1 << ". " << adj_pieces[i]->getPiece()->getDisplayChar() << "  (" << x << ", " << y << ")"  << std::endl;
-					std::cout << "> "; std::cin >> choice;
-					if(choice > (int)adj_pieces.size()) std::cout << "Please enter a valid target" << std::endl;
+					std::stringstream full_target_prompt;
+					full_target_prompt << target_prompt.str() << error_msg;
+					this->renderer.drawPrompt(full_target_prompt.str());
+					std::string input = this->renderer.getInputLine();
+					if(input.length() > 0 && input[0] >= '1') {
+						choice = input[0] - '0';
+					}
+					if(choice > (int)adj_pieces.size()) 
+						error_msg = "Please enter a valid target\n";
+					else
+						error_msg = "";
 
-				} while(choice > adj_pieces.size());
+				} while(choice > (int)adj_pieces.size());
 				a->setTarget(adj_pieces[choice - 1]->getPiece());
 			}
 
 			break;
 								   }
 
-		case ACTION_SPAWN:
+		case ACTION_SPAWN: {
 			Spawner* s = dynamic_cast<Spawner*>(&p);
+			error_msg = "";
 			do {
-				std::cout << "Type coords you want your piece to spawn to (with a space in between)" << std::endl;
-				std::cout << "> "; std::cin >> x; std::cin >> y;
+				std::stringstream full_prompt;
+				full_prompt << selected_piece_info << "\n" << "Type coords you want to go (with a space in between)\n" << error_msg;
+				this->renderer.drawPrompt(full_prompt.str());
+				std::string input = this->renderer.getInputLine();
+				if(sscanf(input.c_str(), "%u %u", &x, &y) != 2) {
+					error_msg = "Invalid input";
+					x = -1; y = -1;
+				}
 			} while(x < 0 || y < 0 || x > BOARD_W || y > BOARD_H);
 
 			if(s->getCanSpawn().size() == 1) {
 				a->setPieceId(s->getCanSpawn().front());
 			}
 			else { 
+				std::stringstream spawn_prompt;
+				spawn_prompt << "What piece do you wish to spawn ?\n";
+				for(int i = 0; i < s->getCanSpawn().size(); ++i)
+					spawn_prompt << i + 1 << ". " << PIECE_NAMES.at(s->getCanSpawn()[i]) << "\n";
+				
+				error_msg = "";
 				do {
-
-					std::cout << "What piece do you wish to spawn ?" << std::endl;
-					for(int i = 0; i < s->getCanSpawn().size(); ++i)
-						std::cout << i + 1 << ". " << s->getCanSpawn()[i] << std::endl; 
-					std::cout << "> "; std::cin >> pid;
-					if(pid > s->getCanSpawn().size()) std::cout << "Please enter a valid piece" << std::endl;
+					std::stringstream full_spawn_prompt;
+					full_spawn_prompt << spawn_prompt.str() << error_msg;
+					this->renderer.drawPrompt(full_spawn_prompt.str());
+					std::string input = this->renderer.getInputLine();
+					if(input.length() > 0 && input[0] >= '1') {
+						pid = input[0] - '0';
+					}
+					if(pid > s->getCanSpawn().size()) 
+						error_msg = "Please enter a valid piece\n";
+					else
+						error_msg = "";
 
 				} while(pid > s->getCanSpawn().size());
 				a->setPieceId(s->getCanSpawn()[pid-1]);
@@ -458,6 +551,7 @@ Action* TurnManager::askAction(Piece& p) {
 			a->setX(x); a->setY(y);
 
 			break;
+		}
 
 	}
 
