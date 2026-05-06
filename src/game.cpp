@@ -2,7 +2,6 @@
 #include "game_variables.hpp"
 #include "renderer.hpp"
 
-#include <sstream>
 // Team
 Team::Team(char id, int gold) {
 	this->id= id;
@@ -75,9 +74,14 @@ void Cell::setPiece(Piece* p) {
 }
 
 // Board
-Board::Board(std::deque<Team*> vt, Renderer* r) : teams(vt), renderer(r) {
-	for(int i = 0; i < BOARD_H; ++i) {
-		for(int j = 0; j < BOARD_W; ++j) {
+Board::Board(std::deque<Team*> vt, int w, int h, Renderer* r) : teams(vt), renderer(r), width(w), height(h) {
+	cells = new Cell*[width];
+	for(int i = 0; i < width; ++i) {
+		cells[i] = new Cell[height];
+	}
+	
+	for(int i = 0; i < height; ++i) {
+		for(int j = 0; j < width; ++j) {
 			this->cells[i][j].setPiece(nullptr);
 			this->cells[i][j].row = i;
 			this->cells[i][j].col = j;
@@ -88,21 +92,23 @@ Board::~Board() {
 	for(int i = 0; i < teams.size(); ++i) {
         delete teams[i];
     }
-	for(int i = 0; i < BOARD_W; ++i) {
-		for(int j = 0; j < BOARD_H; ++j) {
+	for(int i = 0; i < width; ++i) {
+		for(int j = 0; j < height; ++j) {
 			delete cells[i][j].getPiece();
 			cells[i][j].setPiece(nullptr);
 		}
+		delete[] cells[i];
 	}
+	delete[] cells;
 }
 
 Cell* Board::getCell(int r, int c) {
-	if(r < 0 || c < 0 || c > BOARD_W || r > BOARD_H) return nullptr;
+	if(r < 0 || c < 0 || c >= width || r >= height) return nullptr;
 	return  &this->cells[c][r];
 } 
 Cell* Board::findCell(Piece* piece) {
-	for(int i = 0; i < BOARD_W; ++i) {
-		for(int j = 0; j < BOARD_H; ++j) {
+	for(int i = 0; i < width; ++i) {
+		for(int j = 0; j < height; ++j) {
 			if(this->cells[i][j].getPiece() == piece)
 				return &this->cells[i][j];
 		}
@@ -121,8 +127,8 @@ Team* Board::getTeam(char team) {
 
 std::vector<Piece*> Board::getPiecesFromTeam(char team) {
 	std::vector<Piece*> res;
-	for(int i = 0; i < BOARD_W; ++i) {
-		for(int j = 0; j < BOARD_H; ++j) {
+	for(int i = 0; i < width; ++i) {
+		for(int j = 0; j < height; ++j) {
 			Piece* p = this->cells[i][j].getPiece();
 			if(p != nullptr && p->getTeam() == team) {
 				res.push_back(this->cells[i][j].getPiece());
@@ -134,8 +140,8 @@ std::vector<Piece*> Board::getPiecesFromTeam(char team) {
 
 std::vector<Piece*> Board::getAvailablePiecesFromTeam(char team) {
 	std::vector<Piece*> res;
-	for(int i = 0; i < BOARD_W; ++i) {
-		for(int j = 0; j < BOARD_H; ++j) {
+	for(int i = 0; i < width; ++i) {
+		for(int j = 0; j < height; ++j) {
 			Piece* p = this->cells[i][j].getPiece();
 			if(p != nullptr && p->getTeam() == team && p->getHasPlayedTT() == false) {
 				res.push_back(this->cells[i][j].getPiece());
@@ -152,13 +158,13 @@ int Board::manhattanDist(Cell c1, Cell c2) {
 void Board::printBoard() {
 	if(!this->renderer) return;
 	std::stringstream board_output;
-	for(int j = 0; j < BOARD_W; ++j) {
+	for(int j = 0; j < width; ++j) {
 		board_output << "--";
 	}
 	board_output << "-\n";
 
-	for(int i = 0; i < BOARD_W; ++i) {
-		for(int j = 0; j < BOARD_H; ++j) {
+	for(int i = 0; i < width; ++i) {
+		for(int j = 0; j < height; ++j) {
 			char s;
 			Cell* c = &this->cells[i][j];
 
@@ -169,7 +175,7 @@ void Board::printBoard() {
 		}
 		board_output << "|\n";
 
-		for(int j = 0; j < BOARD_W; ++j) {
+		for(int j = 0; j < width; ++j) {
 			board_output << "--";
 		}
 		board_output << "-\n";
@@ -190,7 +196,7 @@ bool Board::handleAction(Action* a) {
 			Mobile* mob = dynamic_cast<Mobile*>(a->getPiece());
 			if(!mob) return false;
 
-			if(a->getX() < 0 || a->getX() > BOARD_W || a->getY() < 0 || a->getY() > BOARD_H) {
+			if(a->getX() < 0 || a->getX() >= width || a->getY() < 0 || a->getY() >= height) {
 				if(this->renderer) this->renderer->drawPrompt("Error : Tile is out of bounds !");
 				getch(); return false;
 			}
@@ -220,7 +226,7 @@ bool Board::handleAction(Action* a) {
 			Fighter* mob = dynamic_cast<Fighter*>(a->getPiece()); 
 			if(!mob) return false;
 
-			if(a->getX() < 0 || a->getX() > BOARD_W || a->getY() < 0 || a->getY() > BOARD_H) {
+			if(a->getX() < 0 || a->getX() >= width || a->getY() < 0 || a->getY() >= height) {
 				if(this->renderer) this->renderer->drawPrompt("Error : Tile is out of bounds !");
 				getch(); return false;
 			}
@@ -338,6 +344,9 @@ bool Board::handleAction(Action* a) {
 	}
 	return false;
 }
+
+int Board::getHeight() const { return this->height; }
+int Board::getWidth() const { return this->width; }
 
 // TurnManager
 TurnManager::TurnManager(Board& b, Renderer& r) : board(b), renderer(r) {}
@@ -558,4 +567,173 @@ Action* TurnManager::askAction(Piece& p) {
 	a->setPiece(&p);
 	a->setActionId(1 << choice);
 	return a;
+}
+
+void TurnManager::save(const char* filename) {
+	std::ofstream f;
+	f.open(filename);
+	std::deque<Team*> teams = this->getBoard().getTeams();
+
+	// HEADER 
+	f << "VERSION:1" << std::endl;
+	f << "BOARD_W:" << this->getBoard().getWidth() << std::endl;
+	f << "BOARD_H:" << this->getBoard().getHeight() << std::endl;
+	f << "TEAMS:" << teams.size() << std::endl;
+
+	// TEAMS
+	for(int i = 0; i < teams.size(); ++i)
+		f << teams[i]->getId() << " " << teams[i]->getGold() << std::endl;
+
+	// PIECES
+	for(int i = 0; i < this->getBoard().getHeight(); ++i)
+		for(int j = 0; j < this->getBoard().getWidth(); ++j) {
+			Piece* p = this->board.getCell(i, j)->getPiece();
+			if(p) f << p->getDisplayChar()  << p->getTeam() << i << " " << j << " " << p->getHp() << std::endl;
+		}
+	f.close();
+	return;
+}
+
+void TurnManager::load(const char* filename) {
+	std::ifstream f;
+	f.open(filename);
+	
+	std::string line;
+	int board_w, board_h, num_teams;
+	
+	std::getline(f, line); 
+	
+	std::getline(f, line);
+	sscanf(line.c_str(), "BOARD_W:%d", &board_w);
+	
+	std::getline(f, line); 
+	sscanf(line.c_str(), "BOARD_H:%d", &board_h);
+	
+	std::getline(f, line); 
+	sscanf(line.c_str(), "TEAMS:%d", &num_teams);
+	
+	std::deque<Team*> teams = this->getBoard().getTeams();
+	for(int i = 0; i < num_teams; ++i) {
+		char team_id;
+		int gold;
+		std::getline(f, line);
+		sscanf(line.c_str(), "%c %d", &team_id, &gold);
+		
+		Team* t = this->getBoard().getTeam(team_id);
+		if(t) {
+			t->setGold(gold);
+		}
+	}
+	
+	for(int i = 0; i < board_h; ++i) {
+		for(int j = 0; j < board_w; ++j) {
+			Cell* c = this->getBoard().getCell(i, j);
+			if(c && c->getPiece()) {
+				delete c->getPiece();
+				c->setPiece(nullptr);
+			}
+		}
+	}
+	
+	char piece_char;
+	char team_id;
+	int row, col, hp;
+	while(std::getline(f, line)) {
+		if(line.empty()) continue;
+		
+		sscanf(line.c_str(), "%c%c%d %d %d", &piece_char, &team_id, &row, &col, &hp);
+		
+		Piece* new_piece = nullptr;
+		
+		switch(piece_char) {
+			case 'L':
+				new_piece = new Lord(team_id);
+				break;
+			case 'C':
+				new_piece = new Castle(team_id);
+				break;
+			case 'W':
+				new_piece = new Warrior(team_id);
+				break;
+			case 'F':
+				new_piece = new Farmer(team_id);
+				break;
+			default:
+				continue;
+		}
+		
+		if(new_piece) {
+			new_piece->setHp(hp);
+			new_piece->setHasPlayedTT(0);
+			Cell* dest = this->getBoard().getCell(row, col);
+			if(dest) {
+				dest->setPiece(new_piece);
+			}
+		}
+	}
+	
+	f.close();
+	this->renderer.drawPrompt("Game loaded successfully!");
+	getch();
+	return;
+}
+
+void TurnManager::showSaveLoadMenu() {
+	bool exit_menu = false;
+	while(!exit_menu) {
+		std::stringstream menu_prompt;
+		menu_prompt << "SAVE/LOAD MENU\n\n";
+		menu_prompt << "1. Save Game\t";
+		menu_prompt << "2. Load Game\t";
+		menu_prompt << "3. Exit Menu\t";
+		
+		this->renderer.drawPrompt(menu_prompt.str());
+		std::string choice = this->renderer.getInputLine();
+		
+		if(choice.length() > 0) {
+			switch(choice[0]) {
+				case '1': {
+					// Save menu
+					std::stringstream save_prompt;
+					save_prompt << "Enter filename to save (or press Enter for 'saves/game.save'):\n";
+					this->renderer.drawPrompt(save_prompt.str());
+					std::string filename = this->renderer.getInputLine();
+					
+					if(filename.empty()) {
+						filename = "saves/game.save";
+					}
+					
+					this->save(filename.c_str());
+					std::stringstream saved_msg;
+					saved_msg << "Game saved to '" << filename << "'!";
+					this->renderer.drawPrompt(saved_msg.str());
+					getch();
+					break;
+				}
+				case '2': {
+					// Load menu
+					std::stringstream load_prompt;
+					load_prompt << "Enter filename to load (or press Enter for 'saves/game.save'):\n";
+					this->renderer.drawPrompt(load_prompt.str());
+					std::string filename = this->renderer.getInputLine();
+					
+					if(filename.empty()) {
+						filename = "saves/game.save";
+					}
+					
+					this->load(filename.c_str());
+					break;
+				}
+				case '3': {
+					exit_menu = true;
+					break;
+				}
+				default: {
+					this->renderer.drawPrompt("Invalid choice. Please try again.");
+					getch();
+					break;
+				}
+			}
+		}
+	}
 }

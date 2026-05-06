@@ -5,6 +5,8 @@
 #include "pieces.hpp"
 #include "game_variables.hpp"
 #include <deque>
+#include <fstream>
+#include <sstream>
 class Renderer;
 #endif
 
@@ -46,11 +48,13 @@ class Cell {
 };
 
 class Board {
-	Cell cells[BOARD_W][BOARD_H];
+	Cell** cells;
+	int width;
+	int height;
 	std::deque<Team*> teams;
 	Renderer* renderer;
 	public:
-		Board(std::deque<Team*>, Renderer* r = nullptr);
+		Board(std::deque<Team*>, int w = BOARD_W, int h = BOARD_H, Renderer* r = nullptr);
 		~Board();
 		Cell* getCell(int r, int c);
 		Cell* findCell(Piece* piece);
@@ -61,6 +65,8 @@ class Board {
 		int manhattanDist(Cell c1, Cell c2);
 		void printBoard();
 		bool handleAction(Action*);
+		int getWidth() const;
+		int getHeight() const;
 };
 
 class TurnManager {
@@ -75,4 +81,7 @@ class TurnManager {
 		Board& getBoard();
 		Piece& askPiece();
 		Action* askAction(Piece& piece);
+		void save(const char* filename);
+		void load(const char* filename);
+		void showSaveLoadMenu();
 };

@@ -1,11 +1,11 @@
 #include "renderer.hpp"
 
 #include "game_variables.hpp"
-#include <algorithm>
 #include <ncurses.h>
 Renderer::Renderer() {
 	initscr();
 	echo();
+	
 	int maxx, maxy;
 	getmaxyx(stdscr, maxy, maxx);
 	
@@ -199,3 +199,4 @@ int Renderer::getColorPairForTeam(char teamId) {
      if (pair_id < 1 || pair_id > 7) pair_id = 1;
      return pair_id;
  }
+

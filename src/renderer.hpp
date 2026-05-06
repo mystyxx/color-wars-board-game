@@ -4,8 +4,6 @@
 #pragma once
 #include <ncurses.h>
 #include <panel.h>
-#include "game_variables.hpp"
-#include <iostream>
 #include "game.hpp"
 
 class Renderer {

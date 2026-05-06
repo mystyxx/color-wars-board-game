@@ -1,6 +1,5 @@
 #include "game.hpp"
 #include "renderer.hpp"
-#include <iostream>
 
 int main(void) {
 
@@ -13,7 +12,7 @@ int main(void) {
 	std::vector<Action*> history;
 
 	Renderer* r = new Renderer();
-	Board* b = new Board(teams, r);
+	Board* b = new Board(teams, BOARD_W, BOARD_H, r);
 
 	Lord* l = new Lord('1');
 	Lord* l2 = new Lord('2');
@@ -34,6 +33,7 @@ int main(void) {
 
 		while(!b->getAvailablePiecesFromTeam(b->getTeams().front()->getId()).empty()) {
 			r->drawBoard(*b);
+			
 			Action* a = t.askAction(t.askPiece());
 
 			if(b->handleAction(a))
@@ -46,6 +46,7 @@ int main(void) {
 		b->getTeams().push_back(b->getTeams().front());
 		b->getTeams().pop_front();
 		r->drawStatus(*b);
+		t.showSaveLoadMenu();
 	
 	}
 
