@@ -6,7 +6,7 @@ DEBUG_ARGS = -fsanitize=address
 OUTPUT_FILE = colorwars
 DEBUG_FILE = colorwars_debug
 ZIP = zip
-ARCHIVE_NAME = PAUL_ROUX_L2X_POO_COLORWARS.$(ZIP)
+ARCHIVE_NAME = PAUL_ROUX_L2X_POO_COLORWARS
 OBJ = $(SOURCE_FILES:.cpp=.o)
 DEBUG_OBJ = $(SOURCE_FILES:.cpp=.debug.o)
 USEFUL_FILES = Makefile	README.md
@@ -29,8 +29,12 @@ $(DEBUG_FILE) : $(DEBUG_OBJ)
 
 dist : $(SOURCE_FILES) $(HEADERS)
 	make clean
-	$(ZIP) -r $(ARCHIVE_NAME) src/ $(USEFUL_FILES)
+	mkdir $(ARCHIVE_NAME)
+	cp -r src/ $(ARCHIVE_NAME)
+	cp $(USEFUL_FILES) $(ARCHIVE_NAME)
+	$(ZIP) -r $(ARCHIVE_NAME).$(ZIP) $(ARCHIVE_NAME)
+	rm -rf $(ARCHIVE_NAME)
 
 clean : 
-	rm -f $(DEBUG_FILE) $(OUTPUT_FILE) $(OBJ) $(DEBUG_OBJ)
+	rm -f $(DEBUG_FILE) $(OUTPUT_FILE) $(OBJ) $(DEBUG_OBJ) $(ARCHIVE_NAME).$(ZIP)
 
